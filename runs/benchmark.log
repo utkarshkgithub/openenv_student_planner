@@ -1,0 +1,23 @@
+[START] task=single_topic env=student_planner model=Qwen/Qwen2.5-72B-Instruct
+[STEP] step=1 action={"action_type":"study","topic":"genetics","duration":10.0} reward=0.05 done=false error=null
+[STEP] step=2 action={"action_type":"study","topic":"genetics","duration":10.0} reward=0.05 done=false error=null
+[STEP] step=3 action={"action_type":"study","topic":"genetics","duration":10.0} reward=0.04 done=false error=null
+[STEP] step=4 action={"action_type":"study","topic":"genetics","duration":5.0} reward=0.02 done=false error=null
+[STEP] step=5 action={"action_type":"rest","duration":5.0,"topics":[]} reward=-0.00 done=false error=null
+[STEP] step=6 action={"action_type":"study","topic":"genetics","duration":5.0,"topics":[]} reward=0.02 done=false error=null
+[STEP] step=7 action={"action_type":"study","topic":"genetics","duration":5.0,"topics":[]} reward=0.02 done=false error=null
+[STEP] step=8 action={"action_type":"rest","duration":2.5,"topics":[]} reward=-0.00 done=false error=null
+[END] success=false steps=8 rewards=0.05,0.05,0.04,0.02,-0.00,0.02,0.02,-0.00
+[START] task=balanced_prep env=student_planner model=Qwen/Qwen2.5-72B-Instruct
+[STEP] step=1 action={"action_type":"study","topic":"physiology","duration":15.0} reward=0.01 done=false error=null
+[STEP] step=2 action={"action_type":"study","topic":"cell_biology","duration":15.0} reward=0.01 done=false error=null
+[STEP] step=3 action={"action_type":"study","topic":"ecology","duration":15.0} reward=0.01 done=false error=null
+[STEP] step=4 action={"action_type":"study","topic":"genetics","duration":15.0} reward=0.01 done=false error=null
+[STEP] step=5 action={"action_type":"study","topic":"physiology","duration":15.0} reward=0.01 done=false error=null
+[STEP] step=6 action={"action_type":"rest","duration":10.0} reward=-0.00 done=false error=null
+[STEP] step=7 action={"action_type":"study","topic":"physiology","duration":10.0} reward=0.01 done=false error=null
+[STEP] step=8 action={"action_type":"study","topic":"cell_biology","duration":10.0} reward=0.01 done=false error=null
+[END] success=false steps=8 rewards=0.01,0.01,0.01,0.01,0.01,-0.00,0.01,0.01
+[START] task=full_exam_planning env=student_planner model=Qwen/Qwen2.5-72B-Instruct
+[STEP] step=1 action={"action_type":"study","topic":"algorithms","duration":30.0,"topics":[]} reward=-0.03 done=false error=null
+[END] success=false steps=1 rewards=-0.03

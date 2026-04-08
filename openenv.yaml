@@ -1,0 +1,50 @@
+name: student_planner
+version: "0.1.0"
+description: Deterministic study-planning benchmark for evaluating sequential decision-making with OpenEnv.
+entrypoint: server.app:app
+environment_class: student_planner.client:StudentPlannerEnv
+
+runtime:
+  host: 0.0.0.0
+  port: 7860
+  max_concurrent_envs_env: MAX_CONCURRENT_ENVS
+
+tasks:
+  - id: single_topic
+    description: Improve one weak topic under a simple budget.
+  - id: balanced_prep
+    description: Improve four topics while avoiding neglect and fatigue overrun.
+  - id: full_exam_planning
+    description: Maximize weighted exam readiness with prerequisites and tight time constraints.
+
+action_space:
+  type: object
+  fields:
+    action_type:
+      type: string
+      enum: [study, revise, mock_test, rest, switch_topic, skip]
+    topic:
+      type: string
+      required_for: [study, revise, switch_topic]
+    duration:
+      type: number
+      required_for: [study, revise, rest]
+    topics:
+      type: array
+      items: string
+      optional_for: [mock_test]
+
+observation_space:
+  type: object
+  fields:
+    mastery: mapping[string, number in [0,1]]
+    fatigue: number in [0,1]
+    time_left: number >= 0
+    readiness: number in [0,1]
+    step_count: integer >= 0
+    invalid_action_count: integer >= 0
+    last_action_error: string | null
+
+scoring:
+  description: Deterministic normalized score in [0, 1] based on exam score, coverage, balance, efficiency, fatigue management, and invalid-action penalties.
+  range: [0.0, 1.0]
