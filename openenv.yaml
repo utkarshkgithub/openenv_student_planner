@@ -43,6 +43,7 @@ observation_space:
     readiness: number in [0,1]
     step_count: integer >= 0
     invalid_action_count: integer >= 0
+    current_topic: string | null
     last_action_error: string | null
 
 scoring:
