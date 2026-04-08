@@ -31,8 +31,9 @@ async def health() -> Dict[str, str]:
 
 
 @app.post("/reset")
-async def reset(request: ResetRequest) -> Dict[str, Any]:
-    result = _http_env.reset(task_name=request.task_name, seed=request.seed)
+async def reset(request: ResetRequest | None = None) -> Dict[str, Any]:
+    resolved_request = request or ResetRequest()
+    result = _http_env.reset(task_name=resolved_request.task_name, seed=resolved_request.seed)
     return result.model_dump(mode="json")
 
 
