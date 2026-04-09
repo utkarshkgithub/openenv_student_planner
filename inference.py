@@ -55,6 +55,7 @@ TEMPERATURE = float(os.getenv("TEMPERATURE", "0.0"))
 MAX_TOKENS = int(os.getenv("MAX_TOKENS", "180"))
 SUCCESS_SCORE_THRESHOLD = float(os.getenv("SUCCESS_SCORE_THRESHOLD", "0.65"))
 BASELINE_SCORE_PATH = os.getenv("BASELINE_SCORE_PATH", "runs/baseline_scores.json")
+SCORE_EPSILON = 1e-6
 
 SYSTEM_PROMPT = textwrap.dedent(
     """
@@ -94,6 +95,10 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
 def log_end(success: bool, steps: int, rewards: List[float]) -> None:
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(f"[END] success={str(success).lower()} steps={steps} rewards={rewards_str}", flush=True)
+
+
+def clamp_task_score(value: float) -> float:
+    return min(1.0 - SCORE_EPSILON, max(SCORE_EPSILON, float(value)))
 
 
 def make_user_prompt(task_name: str, observation: StudentPlannerObservation, history: List[str]) -> str:
@@ -222,7 +227,7 @@ async def run_task(task_name: str, client: OpenAI) -> Dict[str, object]:
     history: List[str] = []
     steps_taken = 0
     success = False
-    normalized_score = 0.0
+    normalized_score = SCORE_EPSILON
 
     log_start(task=task_name, env=BENCHMARK, model=MODEL_NAME)
 
@@ -256,7 +261,9 @@ async def run_task(task_name: str, client: OpenAI) -> Dict[str, object]:
             if result.done:
                 break
 
-        normalized_score = float((result.info or {}).get("normalized_score", result.observation.readiness))
+        normalized_score = clamp_task_score(
+            float((result.info or {}).get("normalized_score", result.observation.readiness))
+        )
         success = normalized_score >= SUCCESS_SCORE_THRESHOLD
 
     finally:

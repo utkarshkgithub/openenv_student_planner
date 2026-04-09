@@ -5,6 +5,8 @@ from typing import Dict
 
 from .models import GradeBreakdown, StudentPlannerState, TaskConfig
 
+SCORE_EPSILON = 1e-6
+
 
 def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
     if value < low:
@@ -12,6 +14,10 @@ def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
     if value > high:
         return high
     return value
+
+
+def _clamp_open_unit_interval(value: float) -> float:
+    return _clamp(value, SCORE_EPSILON, 1.0 - SCORE_EPSILON)
 
 
 def exam_score(mastery: Dict[str, float], weights: Dict[str, float]) -> float:
@@ -53,7 +59,7 @@ def grade_state(state: StudentPlannerState, task: TaskConfig) -> GradeBreakdown:
     fatigue = _clamp(1.0 - state.fatigue)
     invalid_penalty = min(0.5, state.invalid_action_count * 0.02)
 
-    final = _clamp(
+    final = _clamp_open_unit_interval(
         0.50 * exam
         + 0.20 * coverage
         + 0.15 * balance

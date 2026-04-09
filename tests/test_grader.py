@@ -30,7 +30,7 @@ def test_grade_bounds() -> None:
     assert 0.0 <= grade.balance_score <= 1.0
     assert 0.0 <= grade.efficiency_score <= 1.0
     assert 0.0 <= grade.fatigue_score <= 1.0
-    assert 0.0 <= grade.final_score <= 1.0
+    assert 0.0 < grade.final_score < 1.0
 
 
 def test_deterministic_score_for_same_actions() -> None:

@@ -38,7 +38,7 @@ def test_episode_terminates_and_emits_normalized_score() -> None:
 
     assert result.done
     assert "normalized_score" in result.info
-    assert 0.0 <= float(result.info["normalized_score"]) <= 1.0
+    assert 0.0 < float(result.info["normalized_score"]) < 1.0
 
 
 def test_reward_breakdown_matches_scalar_reward() -> None:
