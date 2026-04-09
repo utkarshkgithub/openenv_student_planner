@@ -52,30 +52,33 @@ def efficiency_score(time_budget: float, time_left: float) -> float:
 
 
 def grade_state(state: StudentPlannerState, task: TaskConfig) -> GradeBreakdown:
-    exam = exam_score(state.mastery, state.topic_weights)
-    coverage = coverage_score(state.mastery, task.coverage_threshold)
-    balance = balance_score(state.mastery)
-    efficiency = efficiency_score(state.time_budget, state.time_left)
-    fatigue = _clamp(1.0 - state.fatigue)
+    raw_exam = exam_score(state.mastery, state.topic_weights)
+    raw_coverage = coverage_score(state.mastery, task.coverage_threshold)
+    raw_balance = balance_score(state.mastery)
+    raw_efficiency = efficiency_score(state.time_budget, state.time_left)
+    raw_fatigue = _clamp(1.0 - state.fatigue)
     invalid_penalty = min(0.5, state.invalid_action_count * 0.02)
 
     final = _clamp_open_unit_interval(
-        0.50 * exam
-        + 0.20 * coverage
-        + 0.15 * balance
-        + 0.10 * efficiency
-        + 0.05 * fatigue
+        0.50 * raw_exam
+        + 0.20 * raw_coverage
+        + 0.15 * raw_balance
+        + 0.10 * raw_efficiency
+        + 0.05 * raw_fatigue
         - invalid_penalty
     )
 
-    success = exam >= task.success_exam_threshold and coverage >= task.success_coverage_threshold
+    success = (
+        raw_exam >= task.success_exam_threshold
+        and raw_coverage >= task.success_coverage_threshold
+    )
 
     return GradeBreakdown(
-        exam_score=exam,
-        coverage_score=coverage,
-        balance_score=balance,
-        efficiency_score=efficiency,
-        fatigue_score=fatigue,
+        exam_score=_clamp_open_unit_interval(raw_exam),
+        coverage_score=_clamp_open_unit_interval(raw_coverage),
+        balance_score=_clamp_open_unit_interval(raw_balance),
+        efficiency_score=_clamp_open_unit_interval(raw_efficiency),
+        fatigue_score=_clamp_open_unit_interval(raw_fatigue),
         invalid_penalty=invalid_penalty,
         final_score=final,
         success=success,

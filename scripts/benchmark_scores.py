@@ -20,6 +20,11 @@ from student_planner.env import StudentPlannerCoreEnv
 START_RE = re.compile(r"task=([^ ]+)")
 STEP_RE = re.compile(r"step=(\d+) action=(.*) reward=([-+]?\d*\.?\d+) done=(true|false) error=(.*)$")
 END_RE = re.compile(r"success=(true|false) steps=(\d+) rewards=(.*)$")
+SCORE_EPSILON = 1e-6
+
+
+def _clamp_open_unit_interval(value: float) -> float:
+    return min(1.0 - SCORE_EPSILON, max(SCORE_EPSILON, float(value)))
 
 
 @dataclass
@@ -80,7 +85,8 @@ def replay_normalized_score(task: str, action_strs: List[str]) -> float:
 
         result = env.step(payload)
 
-    return float((result.info or {}).get("normalized_score", result.observation.readiness))
+    raw_score = float((result.info or {}).get("normalized_score", result.observation.readiness))
+    return _clamp_open_unit_interval(raw_score)
 
 
 def main() -> None:

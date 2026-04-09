@@ -25,11 +25,42 @@ def test_grade_bounds() -> None:
     state = env.state()
     grade = grade_state(state, get_task("full_exam_planning"))
 
-    assert 0.0 <= grade.exam_score <= 1.0
-    assert 0.0 <= grade.coverage_score <= 1.0
-    assert 0.0 <= grade.balance_score <= 1.0
-    assert 0.0 <= grade.efficiency_score <= 1.0
-    assert 0.0 <= grade.fatigue_score <= 1.0
+    assert 0.0 < grade.exam_score < 1.0
+    assert 0.0 < grade.coverage_score < 1.0
+    assert 0.0 < grade.balance_score < 1.0
+    assert 0.0 < grade.efficiency_score < 1.0
+    assert 0.0 < grade.fatigue_score < 1.0
+    assert 0.0 <= grade.invalid_penalty <= 0.5
+    assert 0.0 < grade.final_score < 1.0
+
+
+def test_single_topic_components_are_strict_open() -> None:
+    env = StudentPlannerCoreEnv(task_name="single_topic")
+    env.reset(seed=42)
+    grade = grade_state(env.state(), get_task("single_topic"))
+
+    assert 0.0 < grade.coverage_score < 1.0
+    assert 0.0 < grade.balance_score < 1.0
+    assert 0.0 < grade.fatigue_score < 1.0
+
+
+def test_boundary_prone_components_are_clamped_open() -> None:
+    env = StudentPlannerCoreEnv(task_name="single_topic")
+    env.reset(seed=11)
+    state = env.state()
+
+    # Force multiple raw component boundaries at once.
+    state.mastery["genetics"] = 0.0
+    state.fatigue = 0.0
+    state.time_left = state.time_budget
+
+    grade = grade_state(state, get_task("single_topic"))
+
+    assert 0.0 < grade.exam_score < 1.0
+    assert 0.0 < grade.coverage_score < 1.0
+    assert 0.0 < grade.balance_score < 1.0
+    assert 0.0 < grade.efficiency_score < 1.0
+    assert 0.0 < grade.fatigue_score < 1.0
     assert 0.0 < grade.final_score < 1.0
 
 
