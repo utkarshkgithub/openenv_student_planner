@@ -56,6 +56,8 @@ MAX_TOKENS = int(os.getenv("MAX_TOKENS", "180"))
 SUCCESS_SCORE_THRESHOLD = float(os.getenv("SUCCESS_SCORE_THRESHOLD", "0.65"))
 BASELINE_SCORE_PATH = os.getenv("BASELINE_SCORE_PATH", "runs/baseline_scores.json")
 SCORE_EPSILON = 1e-6
+# Keep exported values away from boundary collisions after downstream rounding.
+SERIALIZATION_SCORE_EPSILON = 1e-3
 
 SYSTEM_PROMPT = textwrap.dedent(
     """
@@ -97,8 +99,10 @@ def log_end(success: bool, steps: int, rewards: List[float]) -> None:
     print(f"[END] success={str(success).lower()} steps={steps} rewards={rewards_str}", flush=True)
 
 
-def clamp_task_score(value: float) -> float:
-    return min(1.0 - SCORE_EPSILON, max(SCORE_EPSILON, float(value)))
+def clamp_task_score(value: float, epsilon: float = SCORE_EPSILON) -> float:
+    low = float(epsilon)
+    high = 1.0 - low
+    return min(high, max(low, float(value)))
 
 
 def make_user_prompt(task_name: str, observation: StudentPlannerObservation, history: List[str]) -> str:
@@ -228,6 +232,7 @@ async def run_task(task_name: str, client: OpenAI) -> Dict[str, object]:
     steps_taken = 0
     success = False
     normalized_score = SCORE_EPSILON
+    serialized_score = SERIALIZATION_SCORE_EPSILON
 
     log_start(task=task_name, env=BENCHMARK, model=MODEL_NAME)
 
@@ -261,8 +266,11 @@ async def run_task(task_name: str, client: OpenAI) -> Dict[str, object]:
             if result.done:
                 break
 
-        normalized_score = clamp_task_score(
-            float((result.info or {}).get("normalized_score", result.observation.readiness))
+        raw_score = float((result.info or {}).get("normalized_score", result.observation.readiness))
+        normalized_score = clamp_task_score(raw_score)
+        serialized_score = clamp_task_score(
+            normalized_score,
+            epsilon=SERIALIZATION_SCORE_EPSILON,
         )
         success = normalized_score >= SUCCESS_SCORE_THRESHOLD
 
@@ -277,7 +285,8 @@ async def run_task(task_name: str, client: OpenAI) -> Dict[str, object]:
         "task": task_name,
         "steps": steps_taken,
         "total_reward": round(sum(rewards), 6),
-        "normalized_score": round(normalized_score, 6),
+        "normalized_score": round(serialized_score, 6),
+        "score": round(serialized_score, 6),
         "success": success,
     }
 
@@ -308,15 +317,23 @@ async def main() -> None:
 
         mean_score = 0.0
         if summaries:
-            mean_score = sum(float(item["normalized_score"]) for item in summaries) / len(summaries)
+            mean_score = sum(float(item["score"]) for item in summaries) / len(summaries)
+
+        task_scores = {str(item["task"]): float(item["score"]) for item in summaries}
 
         payload = {
             "benchmark": BENCHMARK,
             "model": MODEL_NAME,
             "temperature": TEMPERATURE,
             "tasks": summaries,
+            "task_scores": task_scores,
+            "mean_score": round(mean_score, 6),
             "mean_normalized_score": round(mean_score, 6),
             "score_range": [0.0, 1.0],
+            "strict_score_range": [
+                SERIALIZATION_SCORE_EPSILON,
+                1.0 - SERIALIZATION_SCORE_EPSILON,
+            ],
         }
         score_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 

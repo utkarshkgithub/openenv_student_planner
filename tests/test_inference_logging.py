@@ -1,4 +1,11 @@
-from inference import log_end, log_start, log_step
+from inference import (
+    SCORE_EPSILON,
+    SERIALIZATION_SCORE_EPSILON,
+    clamp_task_score,
+    log_end,
+    log_start,
+    log_step,
+)
 
 
 def test_required_log_format(capsys) -> None:
@@ -20,3 +27,16 @@ def test_required_log_format(capsys) -> None:
         == '[STEP] step=1 action={"action_type":"study","topic":"genetics","duration":20} reward=0.12 done=false error=null'
     )
     assert output[2] == "[END] success=true steps=1 rewards=0.12"
+
+
+def test_clamp_task_score_stays_strictly_open() -> None:
+    assert clamp_task_score(0.0) == SCORE_EPSILON
+    assert clamp_task_score(1.0) == 1.0 - SCORE_EPSILON
+
+
+def test_serialization_clamp_survives_thousandth_rounding() -> None:
+    low = clamp_task_score(0.0, epsilon=SERIALIZATION_SCORE_EPSILON)
+    high = clamp_task_score(1.0, epsilon=SERIALIZATION_SCORE_EPSILON)
+
+    assert round(low, 3) > 0.0
+    assert round(high, 3) < 1.0
