@@ -186,7 +186,7 @@ exam_score = sum(topic_weight[i] * mastery[i]) / sum(topic_weight[i])
 - fatigue penalty if the episode ends exhausted
 - coverage bonus if all important topics pass threshold
 
-Clamp the final score to `[0.0, 1.0]`.
+Keep the final score strictly inside `(0.0, 1.0)` using epsilon clipping.
 
 ---
 
@@ -401,7 +401,7 @@ The project succeeds if:
 - Docker build passes
 - the Hugging Face Space responds to `/reset`
 - the baseline script runs end-to-end
-- the grader returns normalized scores in `[0.0, 1.0]`
+- the grader returns normalized scores strictly inside `(0.0, 1.0)`
 - the three tasks show increasing difficulty
 - different LLMs produce meaningfully different results
 

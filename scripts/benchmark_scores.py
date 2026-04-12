@@ -113,7 +113,7 @@ def main() -> None:
         normalized_values.append(normalized_score)
         reward_values.append(total_reward)
         print(
-            f"{row.task}\t{str(row.success).lower()}\t{row.steps}\t{total_reward:.3f}\t{normalized_score:.3f}"
+            f"{row.task}\t{str(row.success).lower()}\t{row.steps}\t{total_reward:.3f}\t{normalized_score:.6f}"
         )
 
     mean_reward = statistics.mean(reward_values)
@@ -121,7 +121,7 @@ def main() -> None:
     success_rate = sum(1 for row in rows if row.success) / len(rows)
 
     print(f"overall_avg_total_reward\t{mean_reward:.3f}")
-    print(f"overall_avg_normalized_score\t{mean_normalized:.3f}")
+    print(f"overall_avg_normalized_score\t{mean_normalized:.6f}")
     print(f"success_rate\t{success_rate:.3f}")
 
 

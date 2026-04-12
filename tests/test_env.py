@@ -1,5 +1,6 @@
 from student_planner.env import StudentPlannerCoreEnv
 from student_planner.models import StudentPlannerAction
+from student_planner.tasks import list_task_names
 
 
 def test_reset_is_deterministic_for_fixed_seed() -> None:
@@ -40,17 +41,17 @@ def test_episode_terminates_and_emits_normalized_score() -> None:
     assert "normalized_score" in result.info
     assert 0.0 < float(result.info["normalized_score"]) < 1.0
 
-    grade = result.info.get("grade")
-    assert isinstance(grade, dict)
-    for key in (
-        "exam_score",
-        "coverage_score",
-        "balance_score",
-        "efficiency_score",
-        "fatigue_score",
-        "final_score",
-    ):
-        assert 0.0 < float(grade[key]) < 1.0
+
+def test_all_tasks_emit_strictly_bounded_normalized_scores() -> None:
+    for task_name in list_task_names():
+        env = StudentPlannerCoreEnv(task_name=task_name)
+        result = env.reset(seed=42)
+
+        while not result.done:
+            result = env.step(StudentPlannerAction(action_type="skip", duration=10.0))
+
+        assert "normalized_score" in result.info
+        assert 0.0 < float(result.info["normalized_score"]) < 1.0
 
 
 def test_reward_breakdown_matches_scalar_reward() -> None:

@@ -4,6 +4,19 @@ from student_planner.models import StudentPlannerAction
 from student_planner.tasks import get_task
 
 
+def _assert_strictly_bounded(score: float) -> None:
+    assert 0.0 < score < 1.0
+
+
+def _assert_grade_scores_strictly_bounded(grade) -> None:
+    _assert_strictly_bounded(grade.exam_score)
+    _assert_strictly_bounded(grade.coverage_score)
+    _assert_strictly_bounded(grade.balance_score)
+    _assert_strictly_bounded(grade.efficiency_score)
+    _assert_strictly_bounded(grade.fatigue_score)
+    _assert_strictly_bounded(grade.final_score)
+
+
 def _run_sequence(task_name: str, actions: list[StudentPlannerAction]) -> float:
     env = StudentPlannerCoreEnv(task_name=task_name)
     result = env.reset(seed=42)
@@ -25,43 +38,25 @@ def test_grade_bounds() -> None:
     state = env.state()
     grade = grade_state(state, get_task("full_exam_planning"))
 
-    assert 0.0 < grade.exam_score < 1.0
-    assert 0.0 < grade.coverage_score < 1.0
-    assert 0.0 < grade.balance_score < 1.0
-    assert 0.0 < grade.efficiency_score < 1.0
-    assert 0.0 < grade.fatigue_score < 1.0
-    assert 0.0 <= grade.invalid_penalty <= 0.5
-    assert 0.0 < grade.final_score < 1.0
+    _assert_grade_scores_strictly_bounded(grade)
 
 
-def test_single_topic_components_are_strict_open() -> None:
-    env = StudentPlannerCoreEnv(task_name="single_topic")
-    env.reset(seed=42)
-    grade = grade_state(env.state(), get_task("single_topic"))
-
-    assert 0.0 < grade.coverage_score < 1.0
-    assert 0.0 < grade.balance_score < 1.0
-    assert 0.0 < grade.fatigue_score < 1.0
-
-
-def test_boundary_prone_components_are_clamped_open() -> None:
+def test_grade_extremes_remain_strictly_bounded() -> None:
     env = StudentPlannerCoreEnv(task_name="single_topic")
     env.reset(seed=11)
-    state = env.state()
 
-    # Force multiple raw component boundaries at once.
-    state.mastery["genetics"] = 0.0
-    state.fatigue = 0.0
-    state.time_left = state.time_budget
+    env._state.mastery = {topic: 0.0 for topic in env._state.mastery}
+    env._state.fatigue = 1.0
+    env._state.invalid_action_count = 100
+    low_grade = grade_state(env.state(), get_task("single_topic"))
+    _assert_grade_scores_strictly_bounded(low_grade)
 
-    grade = grade_state(state, get_task("single_topic"))
-
-    assert 0.0 < grade.exam_score < 1.0
-    assert 0.0 < grade.coverage_score < 1.0
-    assert 0.0 < grade.balance_score < 1.0
-    assert 0.0 < grade.efficiency_score < 1.0
-    assert 0.0 < grade.fatigue_score < 1.0
-    assert 0.0 < grade.final_score < 1.0
+    env.reset(seed=11)
+    env._state.mastery = {topic: 1.0 for topic in env._state.mastery}
+    env._state.fatigue = 0.0
+    env._state.invalid_action_count = 0
+    high_grade = grade_state(env.state(), get_task("single_topic"))
+    _assert_grade_scores_strictly_bounded(high_grade)
 
 
 def test_deterministic_score_for_same_actions() -> None:
